@@ -1,0 +1,394 @@
+## Hints!
+
+### Level 1
+
+Plain-text password comparison. The program takes a password as the first
+argument, then compare it against a plain-text password. It is available in the
+source code file.
+
+Of course, you can also find this password by running `strings` on the level 1
+binary `1`. This is in fact how some hackers find password-protected backdoors
+or break/pirate certain software (that does not have reasonable security
+protections).
+
+### Level 2
+
+Controlling `argv[0]`. `argv` is an array of arguments, and `argv[0]` is the
+first string that appears in command line. Consider the following example:
+
+~~~bash
+$ ./2 argv1 argv2 argv3
+~~~
+
+Then `argv[0]` will be a pointer to string `./2`, `argv[1]` will be a pointer to
+string `argv1`, etc.
+
+Breaking this level is simple: You just need to create a symlink (`ln -s`) under
+your home directory that points to `/var/challenge/2` and name this symlink as
+`Jy...`. Since it is comparing `argv[0] + 2` against the `Jy...` string, you can
+run the symlink by `./Jy...` and pass this level.
+
+Note that `/var/challenge/2` is not writable. You have to create the symlink in
+your home directory.
+
+### Level 3
+
+This level is very similar to level 2, just that I am no longer adding 2 to
+`argv[0]` before comparison. That means the program will be comparing `./Jy...`
+to `Jy...` and fail. So what can you do?
+
+Remember that `ls` is a program, but you do not run it with `./ls`. Why? It is
+the magic of the `PATH` environment variable. `PATH` is a list of _directories_.
+When you want to run a program or a command, as long as the program or the
+command exists in one of the directories in `PATH`, you will be able to run it
+without `./`.
+
+So the solution is simple: Adding your home directory to `PATH`:
+
+~~~bash
+export PATH=$(echo ~):$PATH
+~~~
+
+And then run `Jy...` to pass this level.
+
+### Level 4
+
+This level is no longer about plain-text comparison. Instead, it compares your
+input password against the [MD5 hash](https://en.wikipedia.org/wiki/MD5) of
+another string. The only problem is that the stupid developer made a mistake --
+instead of embedding the MD5 hash directly into the file, he lets the program to
+compute the MD5 hash during runtime using a *plain-text* string! Well, again,
+the password is leaked...
+
+### Level 5
+
+Eventually the comparison is done right! But the MD5 hash that is used here can
+be found online. Try googling it and see if you can find the original string.
+
+### Level 6
+
+Note that in this level, the MD5 hash comparison is performed on the raw MD5
+hash output (instead of an MD5 hex representation). The program uses
+`strncmp()`, which is a function that is only supposed to be used to compare
+**strings**! Take a look at how `strncmp()` works and how the developer is using
+it in the program. If we can find an input string whose first byte of its MD5
+hash is a null byte `'\x00'`, then `len_0` will become 0, which means
+`strncmp(checksum_0, checksum_1, 0)` will always return 0 (meaning the two
+"strings" are equivalent).
+
+### Level 7
+
+This is the trickiest level so far. The intended vulnerability in this level is
+a race condition (or a TOCTTOU vulnerability). The program calls `md5sum` to
+calculate the MD5 hash of user input, writes it to another file, then reads the
+file. However, the file name is predictable, and there is no protection on the
+file that `md5sum` outputs to, meaning that the user can overwrite output file
+with the desired MD5 hash and pass the check. I added a `sleep(2)` in the source
+code to make winning the race easier.
+
+But you definitely do not want to do this level by hand. In the end, it's a
+`sleep(2)`, not a `sleep(200)`. This is how I would approach it:
+
+- Predict all 50 file names for the next 50 seconds. You can just copy the file
+  name generation code from `7.c` and run it from your home directory. Make sure
+  you are running it on Linux if you are running the code on your local machine
+  (this is because different libc runtimes may have different ways of
+  calculating random numbers)!
+
+- Write a Python file that loops and keeps writing the desired MD5 hash to these
+  50 files.
+
+- In a second terminal, run `./7` with an arbitrary password multiple times
+  until you win the race and pass this level.
+
+**Update** To make your life easier, take a look at [this
+post](https://piazza.com/class/ke151pbdqqi1yn?cid=593) to find a C
+implementation of a function that predicts the file names and write the desired
+MD5 digest to these files.
+
+### Level 8
+
+Create a symlink under your home directory and point it to
+`/var/challenge/level8/.secret`.
+
+Alternatively, `~` is expanded to the value of the `HOME` environment variable.
+You can modify the `HOME` environment variable so that `~/.secret` is expanded
+to `/var/challenge/level8/.secret`.
+
+### Level 9
+
+Create a symlink under your home directory and point it to
+`/var/challenge/level9/.secret`.
+
+Alternatively, `~` is expanded to the value of the `HOME` environment variable.
+You can modify the `HOME` environment variable so that `~/.secret` is expanded
+to `/var/challenge/level9/.secret`.
+
+### Level 10
+
+This level tries to read an environment variable `BASE`. You can set its value
+so that `$BASE/.secret` is expanded to `/var/challenge/level10/.secret`.
+
+### Level 11
+
+Slightly trickier than the last level. Notice that `/` and `//` are the same in
+file paths, you can simply set `BASE` so that `$BASE/.secret` is expanded to
+`//var/challenge/level11/.secret` and bypass the `strcmp()` check. Symlink also
+works.
+
+### Level 12
+
+Same as the previous level, but you cannot use a symlink anymore.
+
+### Level 13
+
+The use of `realpath()` means that we cannot use equivalent paths to bypass the
+`strcmp()` check. Symlink also does not work. However, noticing that there is a
+call to `sleep(5)`, you should quickly realize that this is again a race
+condition (or TOCTTOU) vulnerability. The solution is simply create a file
+first, specify a `BASE` value so that `$BASE/.secret` points to a non-symlink
+file that you control, and then during the 5-second sleep swap the file with a
+symlink that points to `/var/challenge/level13/.secret`.
+
+### Level 14
+
+There is a command line injection vulnerability in this level. If the argument
+you provide to `14` is `foobar`, then the command that will be executed by
+`system()` will be `/usr/bin/tidy -asxml foobar`. Therefore, if you pass in
+`;l33t`, the final command will be `/usr/bin/tidy -asxml ;l33t`. It will execute
+`l33t`, and you will advance to the next level.
+
+However, there is a small trick here. You cannot run `./14 ;l33t` in Bash since
+Bash will parse this entire string and split it into two commands, `./14` and
+`l33t`, and then execute them one after the other! The correct solution is to
+avoid your own shell from parsing this command string and splitting into two
+commands. You need to wrap `;l33t` within a pair of double quotes so that your
+Bash understands that `;l33t` is supposed to be the first argument that is
+passed to `./14`.
+
+The final solution: `./14 ";l33t"`.
+
+### Level 15
+
+Also a command line injection vulnerability. If you pass in ";foobar", the final
+command will become `/usr/bin/tidy -asxml ";foobar"`, which defeats our small
+trick of injecting a new command. The solution is straightforward: Provide
+another double quote in front of your argument and provide one more double quote
+at the end of your argument to close out the last double quote in the original
+command string.
+
+Again, you need to escape your double quotes (`\"`), otherwise Bash will try to
+parse them instead of passing them verbatim to `15`.
+
+The final solution: `./15 "\"; l33t \""`.
+
+### Level 16
+
+Command line injection again, but you cannot bypass it using double quotes
+anymore. But, there are more than one way to inject a bash command! Try
+`$(foobar)` :)
+
+### Level 17
+
+This is a trap. Is it yet another command line injection? Nope. Note that `tidy`
+is called without specifying the full path, you may use the same trick from
+Level 3 to bypass it: Create a symlink called `tidy` under your home directory
+and point it to `/bin/sh`; then add your home directory to the `PATH` envionment
+variable and make sure it is the first directory in that list:
+
+~~~bash
+export PATH=$(echo ~):$PATH
+~~~
+
+### Level 18
+
+Same as the previous level. It is slightly more annoying since you will not be
+able to provide any input or see any output for the program that is executed
+instead of `tidy`. Do not attempt to get a shell here. You can execute `l33t`
+directly! After that, remember to log out and then log back in to advance to the
+next level.
+
+### Level 19
+
+This is a command line injection vulnerability but the challenge filters
+semicolons. You can bypass it using `$(foobar)`. However, `./19 $(foobar)` will
+not work since your Bash will execute `foobar` first, and then replace
+`$(foobar)` with the output of `foobar` before executing `./19`. Therefore, you
+need to escape the dollar sign: `./19 "\$(foobar)"`.
+
+You may see `find` or `Bash` complaining about "Your: not found" or "paths must
+precede expression: 'user'". Ignore them. Your injected code `$(foobar)` has
+already been executed. Simply log out and then log back in to advance to the
+next level!
+
+### Level 20
+
+Even `$` is filtered. How about `||`?
+
+### Level 21
+
+`|` is added to the filter list. Try
+
+~~~
+`foobar`
+~~~
+.
+
+### Level 22
+
+OK, backticks are also filtered. Try `&&`.
+
+### Level 23
+
+Again, try `&&`.
+
+### Level 24
+
+Umm... this is getting harder. All these injection characters are filtered. Are
+there other injection characters that may work? Maybe. But instead of finding
+another injection character, let's try something different: `find` takes a
+special argument `-exec`. Take a look at its manpage to see how to use it! You
+need to bypass the double quotes by passing in escaped double quotes.
+
+### Level 25
+
+Same as above. Easier since you don't need to bypass double quotes.
+
+### Level 26
+
+Same as level 24, but you cannot execute `l33t` directly. But you can create a
+symlink to `l33t` and pass in the path of your symlink to bypass the check :)
+
+The past several levels tell us one thing: Don't rely on character filtering to
+prevent injection vulnerabilities.
+
+### Level 27
+
+Beginning from this level, you are in the world of memory corruption! As the
+first memory-corruption exercise, Level 27 is intentionally straightforward. It
+prints out the stack layout for you and allows you to overwrite an arbitrary
+address (specified by providing an offset in **hex**) with an arbitrary value
+(also in hex). Think about how we can hijack the control flow? Yes, we can
+overwrite the stored return address on the stack! Since `main()` returns at the
+end, it has to get the return address from the stack. So the only challenge is
+figuring out which address corresponds to the slot that stores the return
+address. You may start from trying them one by one, but if you take a close
+look, you will realize that the entire `buffer` array, `addr` and `value`
+variables must be on the stack, so there has to be enough space for them all in
+the function frame of `main()` before the return address. So you can start
+trying after index `09`. You just need to pick the correct offset, and use the
+value of the address of `give_me_a_shell` function as the third argument to get
+a shell from this level.
+
+Why do the stack addresses change each time? Because of Address Space Layout
+Randomization (ASLR).
+
+### Level 28
+
+Oops, you don't have source code for this level :/ So you will have to use a
+decompiler, such as Ghidra, to decompile the binary and understand its logic.
+
+The goal for this level is to overwrite the `flag` variable, which is on the
+stack. You may find out about its offset (from the `rsp`) by observing where
+`0xdeadb33f` is. Simply overwrite that offset with the desired value will allow
+you to pass this level and get a shell.
+
+### Level 29
+
+First decompile the binary to get its source code and understand its logic. The
+goal for this level is to overwrite the `flag` variable, which is now a global
+variable. You may find out about its memory address using Ghidra. Then overwrite
+it with the desired value to pass the check and get a shell.
+
+### Level 30
+
+Put your shellcode in an environment variable and then modify the return address
+to jump to your shellcode. Remember to use a super long NOP-sled to make your
+life easier.
+
+### Level 31
+
+The destination buffer of `strcpy()` is overflowable. Since `is_god` locates
+after `buffer` in memory, you may overflow `is_god` and make it a non-zero value
+to pass the "god check" and get a shell.
+
+### Level 32
+
+Again, the destination buffer of `strcpy()` is overflowable. You may use the
+buffer overflow vulnerability to overwrite `checksum_1` and store a known MD5
+hash inside. Remember to use Ghidra to observe the real distance between
+`buffer` and `checksum_1`: They are not necessarily adjacent to each other
+because of memory alignment.
+
+### Level 33
+
+Similar to Level 32, but in this level we no longer store the hex-representation
+of MD5 hashes. Instead, we are storing the raw hash directly! Still remember
+Level 6? Yes, the goal is to overwrite the first byte of `checksum_1` with a
+null byte by providing an argument that is longer than 32 bytes. And then make
+sure your (the first 32 bytes of your) command line argument hashes to another
+digest whose first byte is a null byte.
+
+### Level 34
+
+You can overflow the global buffer `buffer` and overwrite the `filename` buffer
+that follows. Just overwrite it with the location of your shell.
+
+### Level 35
+
+You can control the value in the stack variable `buffer` via the first argument.
+You can overflow it to overwrite `checksum_1` and `is_god` to bypass the check.
+
+### Level 37
+
+Same as Level 34. The only difference is that the variables are on the stack. It
+should make no difference for your exploit.
+
+### Level 39
+
+It's actually the same as Level 38. You don't have to put your shellcode into
+the local buffer. You can either drop your shellcode (and your NOP-sled) in an
+environment variable or just put the shellcode after the stored return address
+on the stack.
+
+Lesson learned: The size of the overflowing buffer usually does not matter as
+long as there is a buffer overflow vulnerability.
+
+### Level 40
+
+You want to create a symlink under your home directory that points to
+`/var/challenge/level40/40.cmd`, and then run `40` with the path of your
+symlink. After passing the first few checks, during the `sleep(5)` period, you
+can remove the symlink, change it to a file that has `/bin/sh` inside, and get a
+shell. This level is similar to Level 13 (but easier).
+
+### Level 41
+
+`password` in the main function is not properly terminated by a null byte. So
+passing in a `password` string of `BUFSIZE` bytes will lead to a stack-based
+buffer overflow inside the `checkpwd()` function. You can then overwrite the
+stored return address on the stack to exploit this vulnerability.
+
+### Level 42
+
+This level is a bit tricky: You only have a one-byte overflow that will
+overwrite the least significant byte of the stored `rbp` on the stack with a
+`\x00` (a null byte). The solution is stack pivoting: After `rbp` is modified by
+this one-byte overflow, after returning from the `write_data` function, the
+`rsp` in the `main` function is now under your control, which means you control
+the stored return value on the stack by manipulating values in the `filename`
+variable in the `write_data` function! An easy way to solve this level is to
+fill the `filename` variable with a bunch of different garbage bytes, then run
+this program in GDB and observe (when it crashes) which value `rsp` points at
+when the `ret` instruction of the `main` function is reached; modifying that
+value will give you RIP control.
+
+### Level 43
+
+You need to use the trick in the `Hacking Blind` paper (which I mentioned during
+my lectures) to discover the secret canary value. Then it is the same as Level 42.
+
+### Level 44
+
+The off-by-one vulnerability is at line 44 of the source file. I hope this is
+enough for you to solve this level :)
