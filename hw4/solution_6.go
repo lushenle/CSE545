@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -41,16 +42,28 @@ func randomInt(min, max int) int {
 	return min + rand.Intn(max-min+1)
 }
 
+// run execute linux command
+func run(command, arg string) error {
+	cmd := exec.Command(command, arg)
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
-	go func() {
-		for {
-			text := randomString(randomInt(5, 20))
-			md5sum := getMD5Hash(text)
-			if md5sum[:2] == "00" {
-				fmt.Printf("%v md5sum is: %v\n", text, md5sum)
-				os.Exit(0)
-			}
+	for {
+		text := randomString(randomInt(5, 20))
+		md5sum := getMD5Hash(text)
+		if md5sum[:2] == "00" {
+			fmt.Printf("%v md5sum is: %v\n", text, md5sum)
+			run("/challenge/main", text)
 		}
-	}()
-	time.Sleep(1 * time.Second)
+	}
 }
