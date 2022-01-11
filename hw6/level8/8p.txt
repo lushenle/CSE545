@@ -1,0 +1,16 @@
+POST /2factor.php HTTP/1.1
+Host: webexploit.cn.cse545.io:8088
+Content-Length: 435
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://webexploit.cn.cse545.io:8088
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://webexploit.cn.cse545.io:8088/2factor.php
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9
+Cookie: auth=29bf56ce5cef888cb26761fbc9b0db6d
+Connection: close
+
+factor=123456

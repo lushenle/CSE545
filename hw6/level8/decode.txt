@@ -1,0 +1,22 @@
+
+YWRtaW46U2VjcmV0QWZ0ZXJSZWRpcmVjdAoxMTExMTExMTE6MjIyMjIyMjIKMTIzOjEyMwphYmM6MTIzCjoKYWRtaW4xOjEyMwphZG1pbicgb3IgMT0xIG9yICcxJz0nMToxMjMKc2NyaXB0OmtpZGRpZQoxMjoxMjM0NTYKdG9ueTp0b255Cm1pa2VfcGVuY2U6R29vZEluamVjdGlvbkNvbmdyYXRzCjE6MQp7ImEiOiIxOjEKeyJhIjoiMTphZG1pbgphYmNkOjEyMwphZG1pbicgb3IgJ2EnPSdhOjEyMwoxMTExZGZkaGplZGpqZG5kbmV3dGhld2h0NDU1OjEKMTExMWRmZGhqZWRqajFkbmRuZXd0aGV3aHQ0NTU6MQoxMTExZGZkaGplZGpqMWRubmV3dGhld2h0NDU1OjEK
+
+admin:SecretAfterRedirect
+111111111:22222222
+123:123
+abc:123
+:
+admin1:123
+admin' or 1=1 or '1'='1:123
+script:kiddie
+12:123456
+tony:tony
+mike_pence:GoodInjectionCongrats
+1:1
+{"a":"1:1
+{"a":"1:admin
+abcd:123
+admin' or 'a'='a:123
+1111dfdhjedjjdndnewthewht455:1
+1111dfdhjedjj1dndnewthewht455:1
+1111dfdhjedjj1dnnewthewht455:1
